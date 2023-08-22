@@ -1,0 +1,64 @@
+body {
+    font-family: "Lato", sans-serif;
+}
+.sidenav {
+
+    height: 100%;
+    width: 160px;
+    position: fixed;    /*화면 고정*/
+    z-index: 1;
+    top: 0;
+    left: 0;
+
+    overflow-x: hidden; /*요소 박스에 내용이 더 길때 어떻게 보일지 선택 hidden으로 숨김 x는 왼쪽과 오른쪽의 내용이 길때*/
+    padding-top: 20px;
+}
+
+@media screen and (max-height: 450px) {
+    .sidenav {padding-top: 15px;}
+    .sidenav a {font-size: 18px;}
+}
+#dropbtn {
+    width: 140px;
+    margin-left: 20px;
+    margin-top: 200px;
+    background-color: #275DA0;
+    color: white;
+    padding: 16px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer; /*태그위에 마우스를 위치하면 마우스 커서가 손가락 모양으로 바뀜*/
+}
+
+#dropbtn:hover, #dropbtn:focus {
+    background-color: #2980B9;
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+.dropdown-content {
+    width: 100px;
+    margin-left: 20px;
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    min-width: 160px;
+    overflow: auto;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown a:hover {background-color: #ddd;}
+
+.show {display: block;}
+
+
+

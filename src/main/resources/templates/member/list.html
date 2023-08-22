@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="author" content="Hyehwi">
+    <meta name="date" content="">
+    <meta name="description" content="">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="/favicon/favicon.ico?v=2" type="image/x-icon">
+    <link rel="stylesheet" href="./air-datepicker/dist/css/datepicker.min.css"/>
+    <title></title>
+</head>
+<body class="index">
+
+<!-- header -->
+<div data-th-include="header" id="header"></div>
+
+<!-- PageUpButton-->
+<a href="#header" class="bi bi-arrow-up-circle" th:if="${session.loginId eq null}"></a>
+<a href="#admin-header" class="bi bi-arrow-up-circle" th:if="${session.loginId eq 'admin'}"></a>
+
+<main class="main-body">
+    <div class="row">
+
+
+        <div class="card-body pt-3">
+            <!-- Bordered Tabs -->
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#memList">회원 목록</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#opeList">사업자 목록</a>
+                </li>
+            </ul>
+            <!-- Tab panes -->
+            <div class="tab-content">
+                <div id="memList" class="tab-pane active"><br>
+                    <div>
+                        <!-- 갯수 변경 -->
+                        <select id="limit" class="listbox">
+                            <option value="5">5개씩</option>
+                            <option value="10">10개씩</option>
+                            <option value="20">20개씩</option>
+                        </select>
+
+                        <!-- 카테고리 -->
+                        <select id="category" class="listbox">
+                            <option value="SMNAME">이름</option>
+                            <option value="SMID">아이디</option>
+                            <option value="SMPHONE">연락처</option>
+                        </select>
+                        <!-- 검색어 -->
+                        <input type="text" id="keyword" class="listbox"/>
+                        <!-- 검색버튼 -->
+                        <input type="button" value="검색" id="mSearch" class="listbox"/>
+                    </div>
+
+                    <table class="listbox_table admin_list">
+                        <caption>회원목록</caption>
+                        <thead>
+                        <tr>
+                            <th>아이디</th>
+                            <th>이름</th>
+                            <th>생년월일</th>
+                            <th>성별</th>
+                            <th>핸드폰 번호</th>
+                        </tr>
+                        </thead>
+                        <tbody id="melist" class="admin_list"></tbody>
+                    </table>
+                    <div id="numbering"></div>
+                </div>
+
+                <div id="opeList" class="tab-pane fade"><br>
+                    <div>
+                        <!-- 게시글 갯수 변경 -->
+                        <select id="limit2">
+                            <option value="5">5개씩</option>
+                            <option value="10">10개씩</option>
+                            <option value="20">20개씩</option>
+                        </select>
+
+                        <!-- 카테고리 -->
+                        <select id="category2">
+                            <option value="SONAME">이름</option>
+                            <option value="SOBUSNUM">아이디</option>
+                            <option value="SOPHONE">연락처</option>
+                        </select>
+                        <!-- 검색어 -->
+                        <input type="text" id="keyword2"/>
+                        <!-- 검색버튼 -->
+                        <input type="button" value="검색" id="opSearch"/>
+                    </div>
+
+                    <table>
+                        <caption>사업자 목록</caption>
+                        <thead>
+                        <tr>
+                            <th>사업자 등록번호</th>
+                            <th>사업자 이름</th>
+                            <th>일련번호</th>
+                            <th>사업자 연락처</th>
+                        </tr>
+                        </thead>
+                        <tbody id="opList"></tbody>
+                    </table>
+                    <div id="numbering2"></div>
+                    <!-- End Profile Edit Form -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+<div data-th-include="footer" id="footer"></div>
+</body>
+
+<script src="https://code.jquery.com/jquery-3.6.4.js" integrity="sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E="
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let page = 1;      // 페이지 번호
+    let limit = 5;    // 한페이지에 출력될 데이터 갯수
+    const block = 5;  // 한페이지에 출력괼 페이지 갯수
+    let count = 0;    // 전체 데이터 갯수
+    let list = [];    // 데이터를 담을 변수
+
+    $(function () {
+        $.ajax({
+            type: "POST",
+            url: "/mList",
+            dataTypes: "json",
+            success: function (result) {
+                console.log(result);
+                list = result;
+
+                mList(page, list);
+            },
+            error: function () {
+                alert('mList 통신 실패!');
+            }
+        });
+
+        // 게시글 변경
+        $('#limit').change(function () {
+            page = 1;
+            limit = parseInt($('#limit').val());
+            mList(page, list);
+        });
+
+        // 검색한 목록 출력
+        $('#mSearch').click(function () {
+            let category = $('#category').val();
+            let keyword = $('#keyword').val();
+
+            $.ajax({
+                type: "POST",
+                url: "/mSearch",
+                data: {"category": category, "keyword": keyword},
+                dataTypes: "json",
+                success: function (result) {
+                    console.log(result);
+                    list = result;
+                    mList(page, list);
+                },
+                error: function () {
+                    alert('mSearch 통신 실패!');
+                }
+            });
+        });
+
+        // 리스트 출력 함수
+        function mList(page, list) {
+            count = list.length;
+
+            let maxPage = Math.ceil(count / limit);
+            if (page > maxPage) {
+                page = maxPage;
+            }
+
+            let startRow = (page - 1) * limit;  // 0 5 10
+            let endRow = page * limit - 1;      // 4 9 14
+
+            if (endRow >= count) {
+                endRow = count - 1;
+            }
+
+            let startPage = (Math.ceil(page / block) - 1) * block + 1;    // 1 1 1 1 1 6
+            let endPage = startPage + block - 1;                      // 5 5 5 5 5 10
+
+            if (endPage > maxPage) {
+                endPage = maxPage;
+            }
+
+            let txt = "";
+
+            console.log(`page : ${page} , startPage : ${startPage}, endPage : ${endPage}, maxPage : ${maxPage}`);
+            console.log(`count : ${count} , startRow : ${startRow}, endRow : ${endRow}`);
+            console.log(`limit : ${limit} , block : ${block}`);
+
+            for (let i = startRow; i <= endRow; i++) {
+                txt += `<tr>`;
+                txt += `<td><a href="/mView/${list[i].smId}">${list[i].smId}</a></td>`;
+                txt += `<td>${list[i].smName}</td>`;
+                txt += `<td>${list[i].smBirth}</td>`;
+                txt += `<td>${list[i].smGender}</td>`;
+                txt += `<td>${list[i].smPhone}</td>`;
+                txt += `</tr>`;
+            }
+            $('#melist').empty();
+            $('#melist').append(txt);
+
+            let pageNum = [];
+            let prev = (page - 1 < 1 ? 1 : page - 1);
+            let next = (page + 1 >= maxPage ? maxPage : page + 1);
+
+            // [이전] 버튼
+            if (page <= 1) {
+                pageNum += `\<`;
+            } else {
+                pageNum += `<a class="prev" href="#" data-page="${prev}"> \< </a>`;
+            }
+            // [번호] 버튼
+            for (let i = startPage; i <= endPage; i++) {
+                if (page == i) {
+                    pageNum += `${i}`;
+                    continue;
+                }
+                pageNum += `<a class="iNum" href="#" data-page="${i}"> ${i} </a>`;
+            }
+            // [다음] 버튼
+            if (page <= maxPage) {
+                pageNum += `\>`;
+            } else {
+                pageNum += `<a class="next" href="#" data-page="${next}"> \> </a>`;
+            }
+
+            $('#numbering').empty();
+            $('#numbering').append(pageNum);
+
+            // [이전] [번호] [다음] 버튼 클릭시
+            $(document).on("click", "#numbering a", function (e) {
+                page = parseInt($(this).data('page'));
+                mList(page, list);
+            });
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/soList",
+            dataTypes: "json",
+            success: function (result) {
+                console.log(result);
+                list = result;
+
+                soList(page, list);
+            },
+            error: function () {
+                alert('soList 통신 실패!');
+            }
+        });
+
+        // 게시글 변경
+        $('#limit').change(function () {
+            page = 1;
+            limit = parseInt($('#limit').val());
+            soList(page, list);
+        });
+
+        // 검색한 목록 출력
+        $('#opSearch').click(function () {
+            let category = $('#category2').val();
+            let keyword = $('#keyword2').val();
+
+            $.ajax({
+                type: "POST",
+                url: "/soSearch",
+                data: {"category": category, "keyword": keyword},
+                dataTypes: "json",
+                success: function (result) {
+                    console.log(result);
+                    list = result;
+                    soList(page, list);
+                },
+                error: function () {
+                    alert('soSearch 통신 실패!');
+                }
+            });
+        });
+
+        // 리스트 출력 함수
+        function soList(page, list) {
+            count = list.length;
+
+            let maxPage = Math.ceil(count / limit);
+            if (page > maxPage) {
+                page = maxPage;
+            }
+
+            let startRow = (page - 1) * limit;  // 0 5 10
+            let endRow = page * limit - 1;      // 4 9 14
+
+            if (endRow >= count) {
+                endRow = count - 1;
+            }
+
+            let startPage = (Math.ceil(page / block) - 1) * block + 1;    // 1 1 1 1 1 6
+            let endPage = startPage + block - 1;                      // 5 5 5 5 5 10
+
+            if (endPage > maxPage) {
+                endPage = maxPage;
+            }
+
+            let txt = "";
+
+            console.log(`page : ${page} , startPage : ${startPage}, endPage : ${endPage}, maxPage : ${maxPage}`);
+            console.log(`count : ${count} , startRow : ${startRow}, endRow : ${endRow}`);
+            console.log(`limit : ${limit} , block : ${block}`);
+
+            for (let i = startRow; i <= endRow; i++) {
+                txt += `<tr>`;
+                txt += `<td><a href="/soView/${list[i].soBusnum}">${list[i].soBusnum}</a></td>`;
+                txt += `<td>${list[i].soName}</td>`;
+                txt += `<td>${list[i].soNum}</td>`;
+                txt += `<td>${list[i].soPhone}</td>`;
+                txt += `</tr>`;
+            }
+            $('#opList').empty();
+            $('#opList').append(txt);
+
+            let pageNum = [];
+            let prev = (page - 1 < 1 ? 1 : page - 1);
+            let next = (page + 1 >= maxPage ? maxPage : page + 1);
+
+            // [이전] 버튼
+            if (page <= 1) {
+                pageNum += `\<`;
+            } else {
+                pageNum += `<a class="prev" href="#" data-page="${prev}"> \< </a>`;
+            }
+            // [번호] 버튼
+            for (let i = startPage; i <= endPage; i++) {
+                if (page == i) {
+                    pageNum += `${i}`;
+                    continue;
+                }
+                pageNum += `<a class="iNum" href="#" data-page="${i}"> ${i} </a>`;
+            }
+            // [다음] 버튼
+            if (page <= maxPage) {
+                pageNum += `\>`;
+            } else {
+                pageNum += `<a class="next" href="#" data-page="${next}"> \> </a>`;
+            }
+
+            $('#numbering2').empty();
+            $('#numbering2').append(pageNum);
+
+            // [이전] [번호] [다음] 버튼 클릭시
+            $(document).on("click", "#numbering2 a", function (e) {
+                page = parseInt($(this).data('page'));
+                soList(page, list);
+            });
+        }
+    });
+
+
+</script>
+</html>
